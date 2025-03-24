@@ -16,9 +16,10 @@ export default function BookTicket() {
     },
   });
 
-  const handleInputChange = (e: any) => {
-    const { name, value, type, checked } = e.target;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target as HTMLInputElement | HTMLSelectElement;
     if (type === "checkbox") {
+      const { checked } = e.target as HTMLInputElement;
       setFormData({
         ...formData,
         options: { ...formData.options, [name]: checked },
@@ -28,7 +29,7 @@ export default function BookTicket() {
     }
   };
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     console.log("Form Submitted:", formData);
   };
