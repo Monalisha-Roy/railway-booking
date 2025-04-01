@@ -35,7 +35,7 @@ const Login: React.FC<LoginProps> = ({
     try {
       await signInWithEmailAndPassword(auth, email, password);
       onClose();
-      router.push("/verify");
+      router.push("/");
     } catch (error) {
       if (error instanceof FirebaseError) {
         setError(error.message);
@@ -46,17 +46,17 @@ const Login: React.FC<LoginProps> = ({
     }
   };
 
-  const handleGoogleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      onClose();
-      router.push("/verify");
-      console.log("user signed in with Google: ", result.user);
-    } catch (error) {
-      console.error("Error signing in with Google: ", error);
-    }
-  };
+  // const handleGoogleLogin = async () => {
+  //   const provider = new GoogleAuthProvider();
+  //   try {
+  //     const result = await signInWithPopup(auth, provider);
+  //     onClose();
+  //     router.push("/verify");
+  //     console.log("user signed in with Google: ", result.user);
+  //   } catch (error) {
+  //     console.error("Error signing in with Google: ", error);
+  //   }
+  // };
 
   if (!show) return null;
 
@@ -118,7 +118,7 @@ const Login: React.FC<LoginProps> = ({
                   </button>
                 </div>
               </form>
-              <div className="flex justify-center items-center w-full">
+              {/* <div className="flex justify-center items-center w-full">
                 <hr className="border border-text border-t-0 w-1/4 mr-1" />
                 <p className="text-xs md:text-sm text-text">Or continue with</p>
                 <hr className="border border-text border-t-0 w-1/4 ml-1" />
@@ -134,7 +134,7 @@ const Login: React.FC<LoginProps> = ({
                   size={20}
                   className="hover:cursor-pointer"
                 />
-              </button>
+              </button> */}
 
               <p className="text-sm text-text">
                 Don&apos;t have an account?{" "}

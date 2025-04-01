@@ -17,6 +17,10 @@ const links = [
     path: "/",
   },
   {
+    name: "Book Tickets",
+    path: "/booktickets",
+  },
+  {
     name: "Services",
     path: "/services",
   },
@@ -94,7 +98,7 @@ export default function Navbar() {
     <>
       <nav
         className={`hidden md:flex h-12 w-full items-center justify-between fixed top-0 z-30 px-16 sm:px-2
-          ${isTop ? "bg-transparent" : "bg-background shadow-md"}`}
+          ${isTop ? "bg-transparent" : "bg-black shadow-md"}`}
       >
         <Link href="/">
           <Image
@@ -111,9 +115,9 @@ export default function Navbar() {
               <li key={index} className="inline-block uppercase font-semibold">
                 <Link
                   href={link.path}
-                  className={`text-white hover:text-[#2ebfd6] duration-500 text-md sm:text-sm ${
+                  className={`text-white hover:text-[#7d97d9] duration-500 text-md sm:text-sm ${
                     pathname === link.path
-                      ? "text-[#2ebfd6] border-b-2 border-[#2ebfd6]"
+                      ? "text-[#7d97d9] border-b-2 border-[#7d97d9]"
                       : ""
                   }`}
                 >
@@ -155,7 +159,7 @@ export default function Navbar() {
           {!isLoggedIn && !showLogin && (
             <button
               onClick={() => setShowLogin(true)}
-              className="bg-transparent text-text px-4 py-1 border border-text rounded-md text-md hover:bg-[#2ebfd6] hover:border-transparent hover:text-white "
+              className="bg-transparent text-white px-4 py-1 border border-text rounded-md text-md hover:bg-[#7d97d9] hover:border-transparent  "
             >
               Login
             </button>
@@ -163,7 +167,7 @@ export default function Navbar() {
           {!isLoggedIn && !showSigUp && (
             <button
               onClick={() => setShowSignUp(true)}
-              className="bg-transparent text-text px-4 py-1 border border-text rounded-md text-md hover:bg-[#2ebfd6] hover:border-transparent hover:text-white "
+              className="bg-transaparent text-white px-4 py-1 border border-text rounded-md text-md hover:bg-[#7d97d9] hover:border-transparent  "
             >
               Signup
             </button>

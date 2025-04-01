@@ -1,19 +1,51 @@
-import { Train } from '@/types/types';
+import { useEffect, useState } from 'react';
+
+type Train = {
+  train_id: number;
+  train_name: string;
+  arrival_time: string;
+  duration: string;
+  price: number;
+};
 
 interface TrainListProps {
-  trains: Train[]
-  onSelect: (train: Train) => void
+  onSelect: (train: Train) => void;
 }
 
-export default function TrainList({ trains, onSelect }: TrainListProps) {
+function useTrainList() {
+  const [trains, setTrains] = useState<Train[]>([]);
+
+  useEffect(() => {
+    async function fetchTrains() {
+      try {
+        const response = await fetch('/api/listTrain');
+        if (!response.ok) {
+          throw new Error('Failed to fetch trains');
+        }
+        const data: Train[] = await response.json(); 
+        setTrains(data);
+      } catch (error) {
+        console.error('Error fetching trains:', error);
+      }
+    }
+
+    fetchTrains();
+  }, []);
+
+  return trains;
+}
+
+export default function TrainList({ onSelect }: TrainListProps) {
+  const trains = useTrainList();
+
   return (
     <div className="space-y-4">
       {trains.map((train) => (
-        <div key={train.id} className="p-4 bg-white rounded-lg shadow-md">
-          <h3 className="text-xl font-bold">{train.name}</h3>
+        <div key={train.train_id} className="p-4 bg-white rounded-lg shadow-md">
+          <h3 className="text-xl font-bold">{train.train_name}</h3>
           <div className="flex justify-between mt-2">
             <div>
-              <p>{train.departure} → {train.arrival}</p>
+              <p>{train.arrival_time}</p>
               <p className="text-gray-600">{train.duration}</p>
             </div>
             <div className="text-right">
@@ -29,5 +61,5 @@ export default function TrainList({ trains, onSelect }: TrainListProps) {
         </div>
       ))}
     </div>
-  )
+  );
 }

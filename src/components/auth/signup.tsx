@@ -1,61 +1,86 @@
 import { RiCloseFill } from "react-icons/ri";
-import { FcGoogle } from "react-icons/fc";
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, TwitterAuthProvider } from "firebase/auth";
-import { useState } from "react";
+import { createUserWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+import { useEffect, useState } from "react";
 import { auth } from "../../../firebase.config";
 import { FirebaseError } from "firebase/app";
 import { useRouter } from "next/navigation";
+import { useUserId } from "@/contexts/user_id";
 
 interface SignupProps {
   show: boolean;
   onClose: () => void;
-  switchToLogin : () => void;
+  switchToLogin: () => void;
 }
 
-const Signup: React.FC<SignupProps> = ({ show, onClose, switchToLogin  }) => {
+const Signup: React.FC<SignupProps> = ({ show, onClose, switchToLogin }) => {
   const router = useRouter();
+  const { user_id } = useUserId();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [error, setError] = useState("");
-  
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+  
+    // Validate email format
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+  
+    // Validate password length
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
+  
+    // Validate phone number
+    if (phone.length !== 10) {
+      setError("Phone number must be 10 digits.");
+      return;
+    }
+  
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      // Create user with Firebase
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userId = userCredential.user.uid;
+  
+      // Prepare user data without password
+      const userData = {
+        user_id: userId,
+        name,
+        email,
+        phone_number: phone,
+        password,
+      };
+  
+      // Insert user data into database
+      const response = await fetch('/api/insertUserData', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to save user data');
+      }
+  
       onClose();
-      router.push("/homepage");
+      router.push("/");
     } catch (error) {
       if (error instanceof FirebaseError) {
         setError(error.message);
       } else {
-        setError("An error occurred. Please try again later."); // Fallback message
+        setError("An error occurred. Please try again later.");
       }
     }
   };
 
-  const handleGoogleLogin = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      onClose();
-      router.push("/homepage");
-      console.log("user signed in with Google: ", result.user);
-    } catch (error) {
-      console.error("Error signing in with Google: ", error);
-    }
-  };
-
-  const handleTwitterLogin = async () => {
-    const provider = new TwitterAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      onClose();
-      router.push("/homepage");
-      console.log("user signed in with Twitter: ", result.user);
-    } catch (error) {
-      console.error("Error signing in with Twitter: ", error);
-    }
-  };
 
   if (!show) return null;
 
@@ -70,6 +95,40 @@ const Signup: React.FC<SignupProps> = ({ show, onClose, switchToLogin  }) => {
             {error && <p className="text-red-500">{error}</p>}
             <div className="flex flex-col justify-center items-center gap-2">
               <form className="flex flex-col w-full" onSubmit={handleSignup}>
+                <div className="flex flex-col">
+                  <label htmlFor="email" className="text-black text-md mb-1">
+                    Name
+                  </label>
+                  <input
+                    type="name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="text-gray-800 text-sm mb-2 px-5 p-2 rounded-md border"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col">
+                  <label htmlFor="phone" className="text-black text-md mb-1">
+                    Phone Number
+                  </label>
+                  <input
+                    type="text"
+                    value={phone}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (/^\d{0,10}$/.test(value)) {
+                        setPhone(value);
+                      }
+                    }}
+                    className="text-gray-800 text-sm mb-2 px-5 p-2 rounded-md border"
+                    required
+                  />
+                  {phone.length > 0 && phone.length < 10 && (
+                    <p className="text-red-500 text-sm">
+                      Phone number must be 10 digits.
+                    </p>
+                  )}
+                </div>
                 <div className="flex flex-col">
                   <label htmlFor="email" className="text-black text-md mb-1">
                     Email address
@@ -94,7 +153,7 @@ const Signup: React.FC<SignupProps> = ({ show, onClose, switchToLogin  }) => {
                     required
                   />
                 </div>
-                
+
                 <div className="flex justify-center">
                   <button
                     className="bg-[#7d97d9] hover:bg-[#263a69] text-lg mt-1 p-2 px-6 rounded-md text-white w-full font-bold"
@@ -104,7 +163,7 @@ const Signup: React.FC<SignupProps> = ({ show, onClose, switchToLogin  }) => {
                   </button>
                 </div>
               </form>
-              <div className="flex justify-center items-center w-full">
+              {/* <div className="flex justify-center items-center w-full">
                 <hr className="border border-text border-t-0 w-1/4 mr-1" />
                 <p className="text-xs md:text-sm text-text">Or continue with</p>
                 <hr className="border border-text border-t-0 w-1/4 ml-1" />
@@ -112,7 +171,7 @@ const Signup: React.FC<SignupProps> = ({ show, onClose, switchToLogin  }) => {
 
               <button onClick={handleGoogleLogin} className="flex items-center justify-center gap-1 border border-background w-full text-lg p-2 rounded-md text-background bg-white">
                 Sign in with Google<FcGoogle size={20} className="hover:cursor-pointer" />
-              </button>
+              </button> */}
               <p className="text-sm text-text">Already have an account? <a onClick={switchToLogin} className="text-[#2c58c9] underline hover:cursor-pointer">Login</a></p>
             </div>
           </div>
