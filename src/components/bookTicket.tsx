@@ -1,159 +1,139 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+// Type Definitions
+interface Station {
+  station_id: number;
+  station_name: string;
+}
+
+interface Train {
+  train_id: number;
+  train_name: string;
+  from_station: string;
+  to_station: string;
+  price: number;
+}
 
 export default function BookTicket() {
+  const [stations, setStations] = useState<Station[]>([]);
+  const [trains, setTrains] = useState<Train[]>([]);
   const [formData, setFormData] = useState({
     from: "",
     to: "",
-    date: "",
+    train_id: "",
+    date: new Date().toISOString().split("T")[0],
     classType: "All Classes",
-    category: "GENERAL",
-    options: {
-      disabilityConcession: false,
-      flexibleDate: false,
-      availableBerth: false,
-      railwayPass: false,
-    },
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target as HTMLInputElement | HTMLSelectElement;
-    if (type === "checkbox") {
-      const { checked } = e.target as HTMLInputElement;
-      setFormData({
-        ...formData,
-        options: { ...formData.options, [name]: checked },
+  // Fetch Stations on Load
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/getStations", { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error(`Error fetching stations: ${res.statusText}`);
+        return res.json();
+      })
+      .then((data) => setStations(data))
+      .catch((err) => {
+        if (err.name !== "AbortError") {
+          console.error("Failed to fetch stations:", err.message);
+        }
       });
-    } else {
-      setFormData({ ...formData, [name]: value });
+
+    return () => controller.abort(); // Cleanup on unmount
+  }, []);
+
+  // Fetch Available Trains
+  useEffect(() => {
+    if (formData.from && formData.to) {
+      const controller = new AbortController();
+      const url = `/api/getTrains?from=${formData.from}&to=${formData.to}`;
+      console.log("Fetching trains from URL:", url);
+      fetch(url, { signal: controller.signal })
+        .then((res) => {
+          if (!res.ok) {
+            // console.error(`Error fetching trains: ${res.status} ${res.statusText}`);
+            // throw new Error(`Error fetching trains: ${res.statusText}`);
+          }
+          return res.json();
+        })
+        .then((data) => setTrains(data))
+        .catch((err) => {
+          if (err.name !== "AbortError") {
+            //console.error("Failed to fetch trains:", err.message);
+            setTrains([]); // Reset trains to an empty array on error
+          }
+        });
+
+      return () => controller.abort(); // Cleanup on unmount
     }
+  }, [formData.from, formData.to]);
+
+  // Handle Input Change
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  // Handle Form Submission
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form Submitted:", formData);
+    console.log("Booking Data:", formData);
   };
 
   return (
-    <div className="bg-white p-8 rounded-lg shadow-lg max-w-2xl mx-auto mt-10">
-      <h2 className="text-2xl font-bold text-center mb-6">BOOK TICKET</h2>
+    <div className="max-w-xl mx-auto p-6 bg-white shadow-lg rounded-lg mt-10">
+      <h2 className="text-2xl font-bold text-center mb-4">Book Train Ticket</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* From and To Inputs */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="text"
-            name="from"
-            placeholder="From"
-            value={formData.from}
-            onChange={handleInputChange}
-            className="border p-3 w-full rounded-lg"
-          />
-          <input
-            type="text"
-            name="to"
-            placeholder="To"
-            value={formData.to}
-            onChange={handleInputChange}
-            className="border p-3 w-full rounded-lg"
-          />
-        </div>
-
-        {/* Date and Class Select */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="date"
-            name="date"
-            value={formData.date}
-            onChange={handleInputChange}
-            className="border p-3 w-full rounded-lg"
-          />
-          <select
-            name="classType"
-            value={formData.classType}
-            onChange={handleInputChange}
-            className="border p-3 w-full rounded-lg"
-          >
-            <option>All Classes</option>
-            <option>AC First Class</option>
-            <option>AC 2 Tier</option>
-            <option>Sleeper Class</option>
-          </select>
-        </div>
-
-        {/* Category Select */}
-        <select
-          name="category"
-          value={formData.category}
-          onChange={handleInputChange}
-          className="border p-3 w-full rounded-lg"
-        >
-          <option>GENERAL</option>
-          <option>LADIES</option>
-          <option>TATKAL</option>
-          <option>PREMIUM TATKAL</option>
+        {/* From Station */}
+        <select name="from" value={formData.from} onChange={handleChange} className="border p-3 w-full rounded">
+          <option value="">Select Departure Station</option>
+          {stations.map((s) => (
+            <option key={s.station_id} value={s.station_name}>{s.station_name}</option>
+          ))}
         </select>
 
-        {/* Additional Options */}
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              name="disabilityConcession"
-              checked={formData.options.disabilityConcession}
-              onChange={handleInputChange}
-              className="h-4 w-4"
-            />
-            <span>Person With Disability Concession</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              name="flexibleDate"
-              checked={formData.options.flexibleDate}
-              onChange={handleInputChange}
-              className="h-4 w-4"
-            />
-            <span>Flexible With Date</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              name="availableBerth"
-              checked={formData.options.availableBerth}
-              onChange={handleInputChange}
-              className="h-4 w-4"
-            />
-            <span>Train with Available Berth</span>
-          </label>
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              name="railwayPass"
-              checked={formData.options.railwayPass}
-              onChange={handleInputChange}
-              className="h-4 w-4"
-            />
-            <span>Railway Pass Concession</span>
-          </label>
-        </div>
+        {/* To Station */}
+        <select name="to" value={formData.to} onChange={handleChange} className="border p-3 w-full rounded">
+          <option value="">Select Destination Station</option>
+          {stations.filter((s) => s.station_name !== formData.from).map((s) => (
+            <option key={s.station_id} value={s.station_name}>{s.station_name}</option>
+          ))}
+        </select>
 
-        {/* Buttons */}
-        <div className="flex justify-between mt-4">
-          <button
-            type="submit"
-            className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600"
-          >
-            Search
-          </button>
-          <button
-            type="button"
-            className="bg-orange-500 text-white px-6 py-2 rounded-lg hover:bg-orange-600"
-          >
-            Easy Booking 
-          </button>
-        </div>
+        {/* Available Trains */}
+        {trains.length > 0 ? (
+          <select name="train_id" value={formData.train_id} onChange={handleChange} className="border p-3 w-full rounded">
+            <option value="">Select a Train</option>
+            {trains.map((t) => (
+              <option key={t.train_id} value={String(t.train_id)}>
+                {t.train_name} ({t.from_station} → {t.to_station}) 
+              </option>
+            ))}
+          </select>
+        ) : (
+          formData.from &&
+          formData.to && (
+            <p className="text-red-500 text-center">
+              {trains.length === 0 ? "No trains available for the selected route." : "Error fetching train data. Please try again later."}
+            </p>
+          )
+        )}
+
+        {/* Date Picker */}
+        <input type="date" name="date" value={formData.date} onChange={handleChange} className="border p-3 w-full rounded" />
+
+        {/* Class Type */}
+        <select name="classType" value={formData.classType} onChange={handleChange} className="border p-3 w-full rounded">
+          <option>All Classes</option>
+          <option>AC First Class</option>
+          <option>AC 2 Tier</option>
+          <option>Sleeper Class</option>
+        </select>
+
+        {/* Submit Button */}
+        <button type="submit" className="bg-blue-500 text-white w-full py-2 rounded hover:bg-blue-600">Book Now</button>
       </form>
     </div>
   );
-};
-
+}

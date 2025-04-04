@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import TrainList from "@/components/trainList";
-import BookingForm from "@/components/bookTicket";
 import type { Train } from "@/types/types";
 import Image from "next/image";
+import Link from "next/link";
 
 export default function Home() {
   const [selectedTrain, setSelectedTrain] = useState<Train | null>(null);
@@ -37,36 +37,15 @@ export default function Home() {
           <h3 className="text-2xl text-white font-medium">
             Book your tickets effortlessly and enjoy a hassle-free journey. Secure, fast, and reliable!
           </h3>
+          <Link href={"/booktickets"}>
+          <button className="p-3 px-5 hover:bg-[#263a69] hover:cursor-pointer bg-[#7d97d9] text-white font-semibold rounded-lg mt-3">Book Tickets</button>
+          </Link>
         </div>
 
         {/* Train List */}
-        {!selectedTrain && !bookingConfirmed && <TrainList onSelect={setSelectedTrain} />}
+        <TrainList onSelect={setSelectedTrain} />
 
-        {/* Booking Form */}
-        {selectedTrain && !bookingConfirmed && (
-          <BookingForm
-            train={selectedTrain}
-            onSubmit={handleBooking}
-            onBack={() => setSelectedTrain(null)}
-          />
-        )}
-
-        {/* Booking Confirmation */}
-        {bookingConfirmed && (
-          <div className="p-6 bg-white rounded-lg shadow-md text-center">
-            <h2 className="text-2xl font-bold mb-4 text-green-600">Booking Confirmed!</h2>
-            <p className="mb-4">Your tickets have been successfully booked.</p>
-            <button
-              onClick={() => {
-                setSelectedTrain(null);
-                setBookingConfirmed(false);
-              }}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Book Another Ticket
-            </button>
-          </div>
-        )}
+        
       </div>
     </div>
   );
