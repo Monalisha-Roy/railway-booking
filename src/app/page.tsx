@@ -7,13 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 export default function Home() {
-  const [selectedTrain, setSelectedTrain] = useState<Train | null>(null);
-  const [bookingConfirmed, setBookingConfirmed] = useState(false);
-
-  const handleBooking = async (bookingDetails: { passengers: number; date: string }) => {
-    console.log("Booking details:", bookingDetails);
-    setBookingConfirmed(true);
-  };
+  const [, setSelectedTrain] = useState<Train | null>(null);
 
   return (
     <div className="relative min-h-screen">
@@ -43,8 +37,7 @@ export default function Home() {
         </div>
 
         {/* Train List */}
-        <TrainList onSelect={setSelectedTrain} />
-
+        <TrainList onSelect={(train) => setSelectedTrain(train)} />
         
       </div>
     </div>

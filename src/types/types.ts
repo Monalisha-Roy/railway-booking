@@ -1,21 +1,13 @@
-export interface Train {
-  id: string
-  name: string
-  departure: string
-  arrival: string
-  duration: string
-  price: number
-  seatsAvailable: number
-}
-  
-  export interface Booking {
-    id: string
-    trainId: string
-    date: string
-    passengers: number
-    status: 'confirmed' | 'cancelled'
-  }
-
+export type Train = {
+  train_id: number;
+  train_name: string;
+  arrival_time: string;
+  departure_time: string;
+  start_station_name: string;
+  end_station_name: string;
+  days_of_operation: string;
+  base_price: string;
+};
 
   // colors: {
   //   'text': '#0e121b',

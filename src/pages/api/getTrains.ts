@@ -56,13 +56,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     res.status(200).json(result.rows);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Database query error:", error);
 
     return res.status(500).json({
       error: "Internal Server Error",
       message: "An error occurred while querying the database",
-      details: error.message || "Unexpected error in SQL execution",
+      details: (error as Error).message || "Unexpected error in SQL execution",
     });
   } finally {
     client.release();

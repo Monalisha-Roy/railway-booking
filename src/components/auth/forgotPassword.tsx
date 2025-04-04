@@ -19,8 +19,12 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ show, onClose }) => {
       setMessage("Password reset email sent. Check your inbox.");
       // Close the component after sending email successfully
       onClose();
-    } catch (error: any) {
-      setMessage(`Error: ${error.message}`);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        setMessage(`Error: ${error.message}`);
+      } else {
+        setMessage("An unknown error occurred.");
+      }
     }
   };
 

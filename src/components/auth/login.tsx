@@ -1,10 +1,5 @@
 import { RiCloseFill } from "react-icons/ri";
-import { FcGoogle } from "react-icons/fc";
-import {
-  GoogleAuthProvider,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-} from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import { auth } from "../../../firebase.config";
 import { FirebaseError } from "firebase/app";
@@ -26,8 +21,8 @@ const Login: React.FC<LoginProps> = ({
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [, setError] = useState("");
+  const [, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

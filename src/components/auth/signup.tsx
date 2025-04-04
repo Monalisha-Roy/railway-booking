@@ -1,10 +1,9 @@
 import { RiCloseFill } from "react-icons/ri";
-import { createUserWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
-import { useEffect, useState } from "react";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { useState } from "react";
 import { auth } from "../../../firebase.config";
 import { FirebaseError } from "firebase/app";
 import { useRouter } from "next/navigation";
-import { useUserId } from "@/contexts/user_id";
 
 interface SignupProps {
   show: boolean;
@@ -14,7 +13,6 @@ interface SignupProps {
 
 const Signup: React.FC<SignupProps> = ({ show, onClose, switchToLogin }) => {
   const router = useRouter();
-  const { user_id } = useUserId();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
