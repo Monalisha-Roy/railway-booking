@@ -16,9 +16,8 @@ export default function Home() {
         <Image
           src={"/hero.png"}
           alt={"background image"}
-          layout="fill"
-          objectFit="cover"
-          className="brightness-40"
+          fill
+          className="brightness-40 object-cover"
         />
       </div>
 

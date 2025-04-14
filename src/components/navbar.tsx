@@ -10,6 +10,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { VscThreeBars } from "react-icons/vsc";
 import { AiOutlineClose } from "react-icons/ai";
+import { useEmailAndName } from "@/contexts/emailandName";
 
 const links = [
   {
@@ -39,6 +40,7 @@ export default function Navbar() {
   const [hover, setHover] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+  const name = useEmailAndName();
 
   const openLogin = () => {
     setShowLogin(true);
@@ -97,7 +99,7 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`hidden md:flex h-12 w-full items-center justify-between fixed top-0 z-30 px-16 sm:px-2
+        className={`hidden md:flex h-12 w-full items-center justify-between fixed top-0 px-2 md:px-10 z-30 
           ${isTop ? "bg-transparent" : "bg-black shadow-md"}`}
       >
         <Link href="/">
@@ -111,20 +113,22 @@ export default function Navbar() {
         </Link>
         <div className="flex justify-end items-center gap-5">
           <ul className="flex gap-7">
-            {links.map((link, index) => (
-              <li key={index} className="inline-block uppercase font-semibold">
-                <Link
-                  href={link.path}
-                  className={`text-white hover:text-[#7d97d9] duration-500 text-md sm:text-sm ${
-                    pathname === link.path
-                      ? "text-[#7d97d9] border-b-2 border-[#7d97d9]"
-                      : ""
-                  }`}
-                >
-                  {link.name}
-                </Link>
-              </li>
-            ))}
+            {links
+              .filter(link => !(link.name === "Book Tickets" && !isLoggedIn))
+              .map((link, index) => (
+                <li key={index} className="inline-block uppercase font-semibold">
+                  <Link
+                    href={link.path}
+                    className={`text-white hover:text-[#7d97d9] duration-500 text-md sm:text-sm ${pathname === link.path
+                        ? "text-[#7d97d9] border-b-2 border-[#7d97d9]"
+                        : ""
+                      }`}
+                  >
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+
           </ul>
           {isLoggedIn && (
             <div
@@ -133,21 +137,19 @@ export default function Navbar() {
               className=""
             >
               <Image
-                src={"/dp.jpg"}
+                src={"/pp.jpeg"}
                 alt="profile pic"
-                width={38}
-                height={38}
-                className="rounded-full hover:cursor-pointer"
+                width={40}
+                height={40}
+                className="rounded-full hover:cursor-pointer border-2 border-white"
               />
 
               {hover && (
-                <div className="flex flex-col text-xs text-gray-800 absolute top-12 right-2 rounded-md bg-white p-1 hover:cursor-pointer">
-                  <a className="p-1 px-3 hover:bg-gray-300 rounded-sm ">
-                    Wishlist
-                  </a>
+                <div className="flex flex-col text-md text-gray-800 absolute top-11 right-2 rounded-md bg-white p-1 hover:cursor-pointer">
+                    <p>{typeof name === "string" ? name : JSON.stringify(name)}</p>
                   <a
                     onClick={logout}
-                    className="p-1 px-3 hover:bg-gray-300 rounded-sm "
+                    className="p-1 px-3 hover:bg-gray-300 rounded-sm font-bold"
                   >
                     Logout
                   </a>
