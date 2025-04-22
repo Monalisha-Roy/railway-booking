@@ -108,18 +108,18 @@ export default function BookTicket() {
 
   useEffect(() => {
     if (!formData.train_id || !formData.to) return;
-
+  
     const selectedFrom = stations.find((s) => s.station_name === formData.from);
     const selectedTo = stations.find((s) => s.station_name === formData.to);
-
+  
     if (!selectedFrom || !selectedTo) {
       setAvailableClasses([]);
       return;
     }
-
+  
     const controller = new AbortController();
     setIsLoading((prev) => ({ ...prev, classes: true }));
-
+  
     fetch(`/api/getSeats?train_id=${formData.train_id}&station_name=${selectedFrom.station_name}`, {
       signal: controller.signal,
     })
@@ -131,15 +131,13 @@ export default function BookTicket() {
         return res.json();
       })
       .then((data: { classType: string; availableSeats: number }[]) => {
-        // Adding incremental prices for each class type
-        const basePrice = Math.floor(Math.random() * 200) + 467; // Random base price between 50 and 250
+        const basePrice = Math.floor(Math.random() * 200) + 467;
         const classesWithPrices = data.map((item, index) => ({
           ...item,
-          price: basePrice - index * 130, // Incremental price for each class type
+          price: basePrice - index * 130,
         }));
         setAvailableClasses(classesWithPrices);
-
-        // Update price in formData based on selected train and class
+  
         const selectedTrain = trains.find((t) => t.train_id === Number(formData.train_id));
         if (selectedTrain && selectedTrain.price) {
           setFormData((prev) => ({ ...prev, price: selectedTrain.price ?? 0 }));
@@ -154,9 +152,9 @@ export default function BookTicket() {
       .finally(() =>
         setIsLoading((prev) => ({ ...prev, classes: false }))
       );
-
+  
     return () => controller.abort();
-  }, [formData.train_id]);
+  }, [formData.train_id, formData.to, formData.from, stations, trains]);
 
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     const { name, value } = e.target;

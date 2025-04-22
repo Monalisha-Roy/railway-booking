@@ -10,7 +10,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { VscThreeBars } from "react-icons/vsc";
 import { AiOutlineClose } from "react-icons/ai";
-import { useEmailAndName } from "@/contexts/emailandName";
 
 const links = [
   {
@@ -40,7 +39,6 @@ export default function Navbar() {
   const [hover, setHover] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
-  const name = useEmailAndName();
 
   const openLogin = () => {
     setShowLogin(true);
@@ -146,7 +144,6 @@ export default function Navbar() {
 
               {hover && (
                 <div className="flex flex-col text-md text-gray-800 absolute top-11 right-2 rounded-md bg-white p-1 hover:cursor-pointer">
-                    <p>{typeof name === "string" ? name : JSON.stringify(name)}</p>
                   <a
                     onClick={logout}
                     className="p-1 px-3 hover:bg-gray-300 rounded-sm font-bold"
