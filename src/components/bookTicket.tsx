@@ -13,18 +13,24 @@ interface Train {
   train_name: string;
   from_station: string;
   to_station: string;
-  price: number;
+  price?: number; // Optional price field added
+}
+
+interface SeatData {
+  classType: string;
+  availableSeats: number;
+  price: number; // Price field for each class type
 }
 
 export default function BookTicket() {
   const [stations, setStations] = useState<Station[]>([]);
   const [trains, setTrains] = useState<Train[]>([]);
-  const [availableClasses, setAvailableClasses] = useState<string[]>([]);
+  const [availableClasses, setAvailableClasses] = useState<SeatData[]>([]);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState({
     stations: true,
     trains: false,
-    classes: false
+    classes: false,
   });
 
   const [formData, setFormData] = useState({
@@ -33,15 +39,15 @@ export default function BookTicket() {
     train_id: "",
     date: new Date().toISOString().split("T")[0],
     classType: "All Classes",
+    price: 0,
   });
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const ticketRef = useRef<HTMLDivElement>(null);
 
-
-  // Fetch Stations on Load
   useEffect(() => {
     const controller = new AbortController();
-    setIsLoading(prev => ({ ...prev, stations: true }));
+    setIsLoading((prev) => ({ ...prev, stations: true }));
 
     fetch("/api/getStations", { signal: controller.signal })
       .then((res) => {
@@ -54,21 +60,22 @@ export default function BookTicket() {
           console.error("Failed to fetch stations:", err.message);
         }
       })
-      .finally(() => setIsLoading(prev => ({ ...prev, stations: false })));
+      .finally(() =>
+        setIsLoading((prev) => ({ ...prev, stations: false }))
+      );
 
     return () => controller.abort();
   }, []);
 
-  // Fetch Available Trains
   useEffect(() => {
     if (formData.from && formData.to) {
       const controller = new AbortController();
-      setIsLoading(prev => ({ ...prev, trains: true }));
+      setIsLoading((prev) => ({ ...prev, trains: true }));
       setFetchError(null);
 
       const params = new URLSearchParams({
         from: formData.from,
-        to: formData.to
+        to: formData.to,
       });
 
       fetch(`/api/getTrains?${params}`, { signal: controller.signal })
@@ -77,7 +84,12 @@ export default function BookTicket() {
           return res.json();
         })
         .then((data) => {
-          setTrains(data);
+          // Add random price to each train
+          const updatedTrains = data.map((train: Train) => ({
+            ...train,
+            price: Math.floor(Math.random() * 500) + 100,
+          }));
+          setTrains(updatedTrains);
           setFetchError(null);
         })
         .catch((err) => {
@@ -86,14 +98,16 @@ export default function BookTicket() {
             setTrains([]);
           }
         })
-        .finally(() => setIsLoading(prev => ({ ...prev, trains: false })));
+        .finally(() =>
+          setIsLoading((prev) => ({ ...prev, trains: false }))
+        );
 
       return () => controller.abort();
     }
   }, [formData.from, formData.to]);
 
   useEffect(() => {
-    if (!formData.train_id || !formData.to) return;  // Trigger only when train_id changes
+    if (!formData.train_id || !formData.to) return;
 
     const selectedFrom = stations.find((s) => s.station_name === formData.from);
     const selectedTo = stations.find((s) => s.station_name === formData.to);
@@ -104,10 +118,10 @@ export default function BookTicket() {
     }
 
     const controller = new AbortController();
-    setIsLoading(prev => ({ ...prev, classes: true }));
+    setIsLoading((prev) => ({ ...prev, classes: true }));
 
     fetch(`/api/getSeats?train_id=${formData.train_id}&station_name=${selectedFrom.station_name}`, {
-      signal: controller.signal
+      signal: controller.signal,
     })
       .then(async (res) => {
         if (!res.ok) {
@@ -117,7 +131,19 @@ export default function BookTicket() {
         return res.json();
       })
       .then((data: { classType: string; availableSeats: number }[]) => {
-        setAvailableClasses([...new Set(data.map(item => item.classType))]);
+        // Adding incremental prices for each class type
+        const basePrice = Math.floor(Math.random() * 200) + 467; // Random base price between 50 and 250
+        const classesWithPrices = data.map((item, index) => ({
+          ...item,
+          price: basePrice - index * 130, // Incremental price for each class type
+        }));
+        setAvailableClasses(classesWithPrices);
+
+        // Update price in formData based on selected train and class
+        const selectedTrain = trains.find((t) => t.train_id === Number(formData.train_id));
+        if (selectedTrain && selectedTrain.price) {
+          setFormData((prev) => ({ ...prev, price: selectedTrain.price ?? 0 }));
+        }
       })
       .catch((err) => {
         if (err.name !== "AbortError") {
@@ -125,53 +151,59 @@ export default function BookTicket() {
           setAvailableClasses([]);
         }
       })
-      .finally(() => setIsLoading(prev => ({ ...prev, classes: false })));
+      .finally(() =>
+        setIsLoading((prev) => ({ ...prev, classes: false }))
+      );
 
     return () => controller.abort();
-  }, [formData.train_id]);  // ✅ Only runs when train_id changes
+  }, [formData.train_id]);
 
-
-  // Handle Input Change
   const handleChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
     const { name, value } = e.target;
 
-    if (name === 'from' || name === 'to') {
-      setFormData(prev => ({
+    if (name === "from" || name === "to") {
+      setFormData((prev) => ({
         ...prev,
         [name]: value,
-        train_id: '' // Reset train selection when stations change
+        train_id: "",
+        price: 0,
       }));
     } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
-  
-  // Handle Ticket Booking
-const handleSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  // Date validation
-  const selectedDate = new Date(formData.date);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  if (selectedDate < today) {
-    alert("Please select a date in the future");
-    return;
-  }
 
-  if (!formData.train_id) {
-    alert("Please select a train");
-    return;
-  }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
 
-  // Open the modal after successful validation
-  setIsModalOpen(true);
-};
+    const selectedDate = new Date(formData.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+      alert("Please select a date in the future");
+      return;
+    }
+
+    if (!formData.train_id) {
+      alert("Please select a train");
+      return;
+    }
+
+    // Find the selected class price based on selected class
+    const selectedClass = availableClasses.find(
+      (cls) => cls.classType === formData.classType
+    );
+    if (selectedClass) {
+      setFormData((prev) => ({ ...prev, price: selectedClass.price }));
+    }
+
+    setIsModalOpen(true);
+  };
 
   const handleDownloadTicket = () => {
     if (!ticketRef.current) return;
-    html2canvas(ticketRef.current).then((canvas: { toDataURL: () => string; }) => {
+    html2canvas(ticketRef.current).then((canvas) => {
       const link = document.createElement("a");
       link.download = `Ticket_${formData.train_id}.png`;
       link.href = canvas.toDataURL();
@@ -183,45 +215,42 @@ const handleSubmit = (e: React.FormEvent) => {
     <div className="w-full h-auto p-6 bg-white shadow-lg rounded-lg mt-10">
       <h2 className="text-2xl font-bold text-center mb-4">Book Train Ticket</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* From Station */}
-        <div className="relative">
-          <select
-            name="from"
-            value={formData.from}
-            onChange={handleChange}
-            className="border p-3 w-full rounded"
-            disabled={isLoading.stations}
-          >
-            <option value="">{isLoading.stations ? "Loading stations..." : "Select Departure Station"}</option>
-            {stations.map((s) => (
+        <select
+          name="from"
+          value={formData.from}
+          onChange={handleChange}
+          className="border p-3 w-full rounded"
+          disabled={isLoading.stations}
+        >
+          <option value="">
+            {isLoading.stations ? "Loading stations..." : "Select Departure Station"}
+          </option>
+          {stations.map((s) => (
+            <option key={s.station_id} value={s.station_name}>
+              {s.station_name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          name="to"
+          value={formData.to}
+          onChange={handleChange}
+          className="border p-3 w-full rounded"
+          disabled={isLoading.stations}
+        >
+          <option value="">
+            {isLoading.stations ? "Loading stations..." : "Select Destination Station"}
+          </option>
+          {stations
+            .filter((s) => s.station_name !== formData.from)
+            .map((s) => (
               <option key={s.station_id} value={s.station_name}>
                 {s.station_name}
               </option>
             ))}
-          </select>
-        </div>
+        </select>
 
-        {/* To Station */}
-        <div className="relative">
-          <select
-            name="to"
-            value={formData.to}
-            onChange={handleChange}
-            className="border p-3 w-full rounded"
-            disabled={isLoading.stations}
-          >
-            <option value="">{isLoading.stations ? "Loading stations..." : "Select Destination Station"}</option>
-            {stations
-              .filter((s) => s.station_name !== formData.from)
-              .map((s) => (
-                <option key={s.station_id} value={s.station_name}>
-                  {s.station_name}
-                </option>
-              ))}
-          </select>
-        </div>
-
-        {/* Available Trains */}
         {formData.from && formData.to && (
           <div className="relative">
             <select
@@ -254,33 +283,29 @@ const handleSubmit = (e: React.FormEvent) => {
           value={formData.date}
           onChange={handleChange}
           className="border p-3 w-full rounded"
-          min={new Date().toISOString().split('T')[0]} // Restrict to current and future dates
-          max={new Date(new Date().setFullYear(new Date().getFullYear() + 1))
-            .toISOString()
-            .split('T')[0]} // Optional: Restrict to within one year from today
+          min={new Date().toISOString().split("T")[0]}
+          max={new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split("T")[0]}
         />
 
-        {/* Class Type */}
-        <div className="relative">
-          <select
-            name="classType"
-            value={formData.classType}
-            onChange={handleChange}
-            className="border p-3 w-full rounded"
-            disabled={isLoading.classes}
-          >
-            <option value="All Classes">
-              {isLoading.classes ? "Loading classes..." : "All Classes"}
-            </option>
-            {[...new Set(availableClasses)].map((classType) => (
-              <option key={`class-${classType}`} value={classType}>
-                {classType}
+        <select
+          name="classType"
+          value={formData.classType}
+          onChange={handleChange}
+          className="border p-3 w-full rounded"
+          disabled={isLoading.classes}
+        >
+          <option value="All Classes">
+            {isLoading.classes ? "Loading classes..." : "All Classes"}
+          </option>
+          {availableClasses
+            .slice()
+            .map(({ classType, price }: { classType: string; price: number }) => (
+              <option key={classType} value={classType}>
+                {classType} — ₹{price}
               </option>
             ))}
-          </select>
-        </div>
+        </select>
 
-        {/* Submit Button */}
         <button
           type="submit"
           className="bg-blue-500 text-white w-full py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
@@ -288,21 +313,56 @@ const handleSubmit = (e: React.FormEvent) => {
         >
           {isLoading.trains || isLoading.classes ? "Processing..." : "Book Now"}
         </button>
-
       </form>
 
-      {/* Ticket Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96 text-center" ref={ticketRef}>
-            <h2 className="text-xl font-bold mb-4">Train Ticket</h2>
-            <p><strong>Train:</strong> {trains.find((t) => t.train_id === Number(formData.train_id))?.train_name}</p>
-            <p><strong>From:</strong> {formData.from}</p>
-            <p><strong>To:</strong> {formData.to}</p>
-            <p><strong>Date:</strong> {formData.date}</p>
-            <p><strong>Class:</strong> {formData.classType}</p>
-            <button className="bg-green-500 text-white px-4 py-2 mt-4 rounded" onClick={handleDownloadTicket}>Download</button>
-            <button className="bg-red-500 text-white px-4 py-2 mt-4 rounded ml-2" onClick={() => setIsModalOpen(false)}>Close</button>
+          <div
+            className="bg-white p-6 rounded-lg shadow-lg w-96 text-center border-4 border-dashed border-gray-400 relative"
+            ref={ticketRef}
+            style={{
+              backgroundImage: "linear-gradient(to bottom, #f9f9f9, #eaeaea)",
+              fontFamily: "'Courier New', Courier, monospace",
+            }}
+          >
+            <div className="absolute top-0 left-0 w-full h-4 bg-gray-300 rounded-t-lg"></div>
+            <h2 className="text-xl font-bold mb-4 border-b-2 border-gray-300 pb-2">
+              Train Ticket
+            </h2>
+            <p className="text-left">
+              <strong>Train:</strong>{" "}
+              {trains.find((t) => t.train_id === Number(formData.train_id))?.train_name}
+            </p>
+            <p className="text-left">
+              <strong>From:</strong> {formData.from}
+            </p>
+            <p className="text-left">
+              <strong>To:</strong> {formData.to}
+            </p>
+            <p className="text-left">
+              <strong>Date:</strong> {formData.date}
+            </p>
+            <p className="text-left">
+              <strong>Class:</strong> {formData.classType}
+            </p>
+            <p className="text-left">
+              <strong>Price:</strong> ₹{formData.price} INR
+            </p>
+            <div className="mt-4 border-t-2 border-gray-300 pt-2">
+              <button
+                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                onClick={handleDownloadTicket}
+              >
+                Download
+              </button>
+              <button
+                className="bg-red-500 text-white px-4 py-2 rounded ml-2 hover:bg-red-600"
+                onClick={() => setIsModalOpen(false)}
+              >
+                Close
+              </button>
+            </div>
+            <div className="absolute bottom-0 left-0 w-full h-4 bg-gray-300 rounded-b-lg"></div>
           </div>
         </div>
       )}
